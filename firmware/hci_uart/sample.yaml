@@ -1,0 +1,12 @@
+sample:
+  description: TBD
+  name: TBD
+tests:
+  sample.bluetooth.hci_uart.arm:
+    harness: bluetooth
+    platform_allow: seeedstudio_xiao_nrf52840
+    tags: uart bluetooth
+  sample.bluetooth.hci_uart.nrf5:
+    harness: bluetooth
+    platform_allow: seeedstudio_xiao_nrf52840
+    tags: uart bluetooth

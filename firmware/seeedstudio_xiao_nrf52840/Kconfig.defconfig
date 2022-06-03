@@ -1,0 +1,31 @@
+# Seeedstudio XIAO NRF52840 board configuration
+
+if BOARD_SEEEDSTUDIO_XIAO_NRF52840
+
+config BOARD
+	default "seeedstudio_xiao_nrf52840"
+
+# To keep the pre-installed bootloader and softdevice as is,
+# link the application at flash address 0x27000 as descibed here
+# https://github.com/adafruit/Adafruit_nRF52_Bootloader
+
+# Manually override FLASH_LOAD_OFFEST to link the application
+# correctly, after the softdevice.
+# We do not use this pre-installed softdevice, but flash our own.
+
+config FLASH_LOAD_OFFSET
+	default 0x27000
+	depends on BOARD_HAS_XIAO_BLE_BOOTLOADER && !USE_DT_CODE_PARTITION
+
+if USB_DEVICE_STACK
+
+# Enable UART driver, needed for CDC ACM
+config SERIAL
+	default y
+
+endif # USB_DEVICE_STACK
+
+config BT_CTLR
+	default BT
+
+endif # BOARD_SEEEDSTUDIO_XIAO_NRF52840

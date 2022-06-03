@@ -1,0 +1,39 @@
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+	chosen {
+		zephyr,console = &cdc_acm_uart0;
+        zephyr,shell-uart = &cdc_acm_uart0;
+		zephyr,uart-mcumgr = &cdc_acm_uart0;
+		zephyr,bt-mon-uart = &uart0;
+		zephyr,bt-c2h-uart = &uart0;        
+	};
+};
+
+&uart0 {
+	compatible = "nordic,nrf-uart";
+	current-speed = <1000000>;
+	status = "okay";
+	tx-pin = <45>;
+	rx-pin = <44>;
+	rx-pull-up;
+	rts-pin = <47>;
+	cts-pin = <46>;
+	cts-pull-up;
+	hw-flow-control;
+};
+
+&i2c0 {
+	status = "disabled";
+};
+
+&spi1 {
+	status = "disabled";
+};
+
+&zephyr_udc0 {
+	cdc_acm_uart0: cdc_acm_uart0 {
+		compatible = "zephyr,cdc-acm-uart";
+		label = "CDC_ACM_0";
+	};
+};
