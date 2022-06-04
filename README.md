@@ -91,6 +91,16 @@ The follwoing changes are required
 	* Enable random address flag in the advertisments by
 		* line 57 exchange `  if (HCI.leSetAdvertisingParameters(_advertisingInterval, _advertisingInterval, type, 0x00, 0x00, directBdaddr, 0x07, 0) != 0) {` with `  if (HCI.leSetAdvertisingParameters(_advertisingInterval, _advertisingInterval, type, 0x01, 0x00, directBdaddr, 0x07, 0) != 0) {`
 ### Make the hardware connections
+
+Take care NOT to apply more than 1.8V to the Spresense main board!
+
+The documentation warns for damage when using pins that do not match the Spresense board specs. So take care especially when you bend pins or cut off pins.
+"The maximum pin that can be inserted into the socket of each Spresense board is a square pin with a side of 0.64 mm. Inserting a pin with a size larger than this size or a deformed pin into the socket will similarly deform or destroy the contact metal fitting inside the pin socket, resulting in a failure."
+
+The document warns that add on board designs should not be above the GNSS antenna. Else it will not function properly. Should be fine here. I did not test GNSS yet.
+
+Of course you could also attach to the UART2 on the extension board. The LTE extension board does not have UART2
+
 * Connect the pins for UART as specified in the device tree, VCC and GND
 	* (XIAO) RX -> (Spresense) TX
 	* (XIAO) TX -> (Spresense) RX
@@ -114,7 +124,24 @@ The follwoing changes are required
 ![nRF Connect App services view after connecting](images/IMG_2994.jpeg)
 ![nRF Connect App write a value to the LED](images/IMG_2996.jpeg)
 
+## Open tasks and possible variations
+
+### Variations
+* You can use any other board that has BLE and is supported by Zephyr.
+* You can modify the pin layout, UART speed or even switch to SPI (You would need to implement a HCITransport for SPI)
+* You can use the extension board and run the BLE board with 3.3V
+
+### Open tasks
+* By now I was testing the LED sample. I did not yet test other samples or GNSS. Also not BLE signal strength in my setup
+* The hardware connections are not optimal ...
+
+
 ## Troubleshooting
+* Recovering the original bootloader
+	* The original bootloader is not overwritten, however as I do not merge in the Arduino bootloader part. It is required to enter bootloader mode manually by pushing reset twice within 500ms. Then you can use the download button in the Arduino IDE. And it works again for any further downloads as is without pushing the reset button manually
+		* The original bootloader can be found here https://github.com/0hotpotman0/BLE_52840_Core/tree/main/bootloader/Seeed_XIAO_nRF52840_Sense
+		* The softdevice here https://www.nordicsemi.com/Products/Development-software/S140/Download (Use `uf2conv.py s140_nrf52_7.3.0/s140_nrf52_7.3.0_softdevice.hex -c -f 0xADA52840` and copy the generate uf2 file.)
+		* If everything fails, see here https://forum.seeedstudio.com/t/xiao-ble-sense-bootloader-bricked-how-to-restore-it/263091/5 (No need for a Jlink but any SWD programmer will do. e.g. the nRF52840dk)
 * When the BLE does not work as expected (I only tested the LED sample sketch so far) (or you want to add new features to the ArduinoBLE library)
 	* Add debug prints of the BLE library.
 		* Comment in all the `#define _BLE_TRACE_` inside the ArduinoBLE library (Needed to remove some prints as there was a compile error)
@@ -147,3 +174,7 @@ Bluetooth HCI Command - LE Set Advertising Data
             Custom UUID: 19b10000-e8f2-537e-4f6c-d104768a1214 (Unknown)
         Unused
 ```
+
+## Disclaimer
+
+Although I did not brick or destroy any board and the Arduino bootloader was functional at any time, follow this guide at your own risk. Especial if you made your own adaptions. As the Spresene Main board runs at 1.8V and has short pin headers there is always a risk to make mistakes.
