@@ -386,7 +386,7 @@ void main(void)
 	static K_FIFO_DEFINE(rx_queue);
 	int err;
 
-#ifdef USB_DEVICE_STACK
+#ifdef CONFIG_USB_DEVICE_STACK
 	usb_enable(NULL);
 #endif
     configureLED();
