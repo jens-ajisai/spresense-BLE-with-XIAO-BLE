@@ -28,7 +28,8 @@ const int ledPin = LED_BUILTIN; // pin to use for the LED
 #define OCF_RESET              0x0003
 
 
-/*
+/* Analysis while debugging the HCI communication.
+ *
  * Command tx ->  0x1 0x3 0xC 0x0
  *   Reset
  * Command tx ->  0x1 0x1 0x10 0x0
@@ -95,37 +96,28 @@ const int ledPin = LED_BUILTIN; // pin to use for the LED
  *   LE Set Advertise Enable
  */
 
-/*
- * 0x([A-F0-9][A-F0-9]) $1
- * 0x([A-F0-9]) 0$1
- * Command tx ->  0000 
- * 
+/* Regex to convert the debug print commands to Wireshark HEX format
+ *
+ * /0x([A-F0-9][A-F0-9])/$1/g
+ * /0x([A-F0-9])/0$1/g
+ * /Command tx -> /0000 /g
+ *
  */
 
-/*
- * Additional
- * < HCI Command: LE Clear White List (0x08|0x0010) plen 0      
- * < HCI Command: LE Clear Resolving List (0x08|0x0029) plen 0   
- * < HCI Command: LE Set Resolvable Private Address Timeout (0x08|0x002e) plen 2 
- * < HCI Command: Set Event Mask Page 2 (0x03|0x0063) plen 8 
- * < HCI Command: LE Write Suggested Default Data Length (0x08|0x0024) plen 4     
- * < HCI Command: LE Set Default PHY (0x08|0x0031) plen 3    
- * < HCI Command: LE Set Advertising Data (0x08|0x0008) plen 32   
- * OK < HCI Command: LE Set Random Address (0x08|0x0005) plen 6  
- * 
- */
 
-static uint8_t randAddr[]= {0xC9, 0xC8, 0x75, 0x00, 0x0A, 0xEF};
-  uint8_t phySetting[] = {0x00, 0x01, 0x01};
+// moved to library
+//static uint8_t randAddr[]= {0xC9, 0xC8, 0x75, 0x00, 0x0A, 0xEF};
+//uint8_t phySetting[] = {0x00, 0x01, 0x01};
 
 void setup() {
   Serial.begin(115200);
   while (!Serial);
 
-  delay(2000);
+// moved to library
+//  delay(2000);
 
   HCI.debug(Serial2);
- 
+
   // set LED pin to output mode
   pinMode(ledPin, OUTPUT);
 
@@ -136,8 +128,9 @@ void setup() {
     while (1);
   }
 
-  HCI.sendCommand(OGF_LE_CTL << 10 | 0x31, 3, phySetting);
-  HCI.leSetRandomAddress(randAddr);
+  // moved to library
+//  HCI.sendCommand(OGF_LE_CTL << 10 | 0x31, 3, phySetting);
+//  HCI.leSetRandomAddress(randAddr);
 
   // set advertised local name and service UUID:
   BLE.setLocalName("LED");

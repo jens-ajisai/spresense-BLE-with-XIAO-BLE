@@ -56,6 +56,7 @@ I am using nRF Connect SDK version 1.8.0
 #### Configure the Bluetooth HCI UART App
 * In the devicetree overlay (boards/seeedstudio_xiao_nrf52840.overlay)
 	* set the UART0 pins to match the spresense board, increase speed and add hw-flow-control
+	* reduce the speed to 115200. With 1000000 data was droped. I suggest to play with the speed if you need to send large data.
 	* disable i2c and spi as the pin configuration overlaps
 	* (for logging) (not required)
 		* activate UART over USB (cdc_acm_uart)
@@ -80,16 +81,42 @@ I will use uf2 flash mechanism.
 
 ### Make the ArduinoBLE library compatible
 I was using [GitHub - arduino-libraries/ArduinoBLE: ArduinoBLE library for Arduino](https://github.com/arduino-libraries/ArduinoBLE) version d5bc5b8.
-The follwoing changes are required
+The follwoing changes are required (I added a patch for release 1.3.1)
 * src/utility/HCIUartTransport.cpp
 	* line 33 exchange `#error "Unsupported board selected!"` with `#define SerialHCI Serial2`
-	* line 99 exchange `HCIUartTransportClass HCIUartTransport(SerialHCI, 912600);` with `HCIUartTransportClass HCIUartTransport(SerialHCI, 1000000);`
+	* line 99 exchange `HCIUartTransportClass HCIUartTransport(SerialHCI, 912600);` with `HCIUartTransportClass HCIUartTransport(SerialHCI, 115200);`
 		* 912600 was not a valid option.
+	* line 48 add "SERIAL_RTSCTS | SERIAL_8N1" as a second parameter to _uart-> begin
 * src/utility/BLEUuid.cpp
 	* add an implementation for utoa. I copied the one from here [Adafruit_nRF52_Arduino/itoa.c at master · adafruit/Adafruit_nRF52_Arduino · GitHub](https://github.com/adafruit/Adafruit_nRF52_Arduino/blob/master/cores/nRF5/itoa.c)
+	* (for stability) add a guard for null in the constructor before the for loop
 * src/utility/GAP.cpp
 	* Enable random address flag in the advertisments by
 		* line 57 exchange `  if (HCI.leSetAdvertisingParameters(_advertisingInterval, _advertisingInterval, type, 0x00, 0x00, directBdaddr, 0x07, 0) != 0) {` with `  if (HCI.leSetAdvertisingParameters(_advertisingInterval, _advertisingInterval, type, 0x01, 0x00, directBdaddr, 0x07, 0) != 0) {`
+	* Enable random address flag in the scan by
+		* line 90 exchange `  if (HCI.leSetScanParameters(0x01, 0x0010, 0x0010, 0x00, 0x00) != 0) {` with `  if (HCI.leSetScanParameters(0x01, 0x0010, 0x0010, 0x01, 0x00) != 0) {`
+	* (for stability) apply the suggestion by https://github.com/arduino-libraries/ArduinoBLE/issues/213#issuecomment-1064152780 in line 220
+	* (for stability) increase the GAP_MAX_DISCOVERED_QUEUE_SIZE
+* src/utility/ATT.cpp
+	* Enable random address flag in the connect by
+		* line 115 exchange `  if (HCI.leCreateConn(0x0060, 0x0030, 0x00, peerBdaddrType, peerBdaddr, 0x00,` with `  if (HCI.leCreateConn(0x0060, 0x0030, 0x00, peerBdaddrType, peerBdaddr, 0x01,`
+* src/local/BLELocalDevice.cpp
+	* Add a delay in begin() before HCI.begin() as the HCI device needs a little to get ready
+	* Set the random address and some phySettings (not sure if latter is required)
+```
+  static uint8_t randAddr[] = {0xC9, 0xC8, 0x75, 0x00, 0x0A, 0xEF};
+  static uint8_t phySetting[] = {0x00, 0x01, 0x01};
+
+  HCI.sendCommand(OGF_LE_CTL << 10 | 0x31, 3, phySetting);
+  HCI.leSetRandomAddress(randAddr);
+```
+* src/utility/L2CAPSignaling.cpp
+	* If trace is enabled, I got a build error for undefined variables, so I removed them at lines 232+
+* src/utility/HCI.cpp
+	* Apply suggestions by https://github.com/arduino-libraries/ArduinoBLE/issues/213
+	* remove line 292 `    ATT.setMaxMtu(pktLen - 9);`. If might interfere with larget MTU sizes. Not sure if required
+	* for niced wireshark import compatible HCI debug prints add lines to print 0000 after prefix `    _debug->print("0000\t");` and spaces between the HEX values `     _debug->print(" ");`
+
 ### Make the hardware connections
 
 Take care NOT to apply more than 1.8V to the Spresense main board!
@@ -131,9 +158,15 @@ Of course you could also attach to the UART2 on the extension board. The LTE ext
 * You can modify the pin layout, UART speed or even switch to SPI (You would need to implement a HCITransport for SPI)
 * You can use the extension board and run the BLE board with 3.3V
 
+### Tests
+* I tested that advertising, scanning and connecting works.
+* For Nuttx based Adruino Spresense SDK a null check in BLEUUID.cpp is mandatory.
+* I did not encounter any further issues so far
+
+
 ### Open tasks
-* By now I was testing the LED sample. I did not yet test other samples or GNSS. Also not BLE signal strength in my setup
-* The hardware connections are not optimal ...
+* The hardware connections are not optimal ... (I created a breadboard based shield by now, not shown here. Also you can use "normal" breadboard pins upside-down with the Spresense board.)
+* Connections using security and pairing/bonding is not yet tested.
 
 
 ## Troubleshooting
